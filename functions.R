@@ -12,11 +12,23 @@ loglike <- function(eta)
 	} else
 		subx <- exp(c(fixsubx))
 		
-	log1 <- sum(log(1 - exp(-subu[delta1==1] * subx[delta1==1])))
+	a1 <- subu[delta1==1] * subx[delta1==1]
 	
-	log2 <- sum(log(exp(-subu[delta2==1] * subx[delta2==1])
-				-exp(-subv[delta2==1] * subx[delta2==1])))
-				
+	aa <- subu[delta2==1] * subx[delta2==1]
+	bb <- subv[delta2==1] * subx[delta2==1]
+	
+	if (any(!is.finite(c(a1, aa, bb))))
+	  return(1e20)
+	
+	p1 <- 1 - exp(-a1)
+	p2 <- exp(-aa) - exp(-bb)
+	
+	if (any(!is.finite(c(p1, p2))) || any(p1 <= 0) || any(p2 <= 0))
+	  return(1e20)
+	
+	log1 <- sum(log(p1))
+	log2 <- sum(log(p2))
+	
 	log3 <- -sum(subv[delta3==1] * subx[delta3==1])
 	
 	res <- -log1 - log2 - log3
@@ -67,24 +79,24 @@ gradient <- function(eta)
 	### derivarive for beta
 	
 	if (n.total > n.spline) {
-		ggbeta11 <- t(z[,delta1==1]) * exp(-subu[delta1==1] * subx[delta1==1]) * 
+	  ggbeta11 <- t(z[,delta1==1, drop = FALSE]) * exp(-subu[delta1==1] * subx[delta1==1]) * 
 		subu[delta1==1] * subx[delta1==1]
 		
 		ggbeta12 <- 1 - exp(-subu[delta1==1] * subx[delta1==1])
 		
 		ggbeta1 <- number.ones1 %*% (ggbeta11 / ggbeta12)
 		
-		ggbeta21 <- -t(z[,delta2==1]) * exp(-subu[delta2==1] * subx[delta2==1]) * 
+		ggbeta21 <- -t(z[,delta2==1, drop = FALSE]) * exp(-subu[delta2==1] * subx[delta2==1]) * 
 		subu[delta2==1] * subx[delta2==1]
 		
-		ggbeta22 <- t(z[,delta2==1]) * exp(-subv[delta2==1] * subx[delta2==1]) * 
+		ggbeta22 <- t(z[,delta2==1, drop = FALSE]) * exp(-subv[delta2==1] * subx[delta2==1]) * 
 		subv[delta2==1] * subx[delta2==1]
 		
 		ggbeta23 <- exp(-subu[delta2==1] * subx[delta2==1]) - exp(-subv[delta2==1] * subx[delta2==1])
 		
 		ggbeta2 <- number.ones2 %*% ((ggbeta21 + ggbeta22) / ggbeta23)
 		
-		ggbeta3 <- -number.ones3 %*% (t(z[,delta3==1]) * subv[delta3==1] * subx[delta3==1])
+		ggbeta3 <- -number.ones3 %*% (t(z[,delta3==1, drop = FALSE]) * subv[delta3==1] * subx[delta3==1])
 		
 		ggbeta <- ggbeta1 + ggbeta2 + ggbeta3
 		
